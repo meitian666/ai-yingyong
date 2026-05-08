@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
 
     const result = registerSchema.safeParse(body);
     if (!result.success) {
-      const issues = (result.error as any).issues || [];
-      const details = issues.map((e: any) => ({
+      const details = result.error.issues.map((e) => ({
         field: e.path.join('.'),
         message: e.message,
       }));
