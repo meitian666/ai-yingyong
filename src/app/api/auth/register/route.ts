@@ -3,10 +3,20 @@ import { getDb, saveDb } from '@/lib/db';
 import { users } from '@/lib/schema';
 import { registerSchema } from '@/lib/validators';
 import { hashPassword, generateId, nowISO } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
+    const { allowed } = checkRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: '请求过于频繁，请稍后再试' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
 
     const result = registerSchema.safeParse(body);
