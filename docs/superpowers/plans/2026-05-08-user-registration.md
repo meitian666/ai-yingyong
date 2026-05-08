@@ -93,16 +93,42 @@ export const users = sqliteTable('users', {
 });
 ```
 
-- [ ] **Step 3: 创建数据库连接**
+- [ ] **Step 3: 创建数据库连接**（使用 sql.js，因为 better-sqlite3 需要原生编译）
 
 ```typescript
 // src/lib/db.ts
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js';
+import { drizzle } from 'drizzle-orm/sql-js';
 import * as schema from './schema';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 
-const sqlite = new Database('sqlite.db');
-export const db = drizzle(sqlite, { schema });
+const DB_PATH = 'sqlite.db';
+
+let database: SqlJsDatabase;
+
+async function initDb() {
+  const SQL = await initSqlJs();
+  if (existsSync(DB_PATH)) {
+    const buffer = readFileSync(DB_PATH);
+    database = new SQL.Database(buffer);
+  } else {
+    database = new SQL.Database();
+  }
+}
+
+export function saveDb() {
+  writeFileSync(DB_PATH, database.export());
+}
+
+let _db: ReturnType<typeof drizzle> | null = null;
+
+export async function getDb() {
+  if (!_db) {
+    await initDb();
+    _db = drizzle(database, { schema });
+  }
+  return _db;
+}
 ```
 
 - [ ] **Step 4: 添加 db 脚本到 package.json**
@@ -127,7 +153,7 @@ Expected: `drizzle/` 目录生成迁移文件，SQLite 数据库创建成功
 - [ ] **Step 6: 提交**
 
 ```bash
-git add drizzle.config.ts src/lib/db.ts src/lib/schema.ts drizzle/ sqlite.db package.json
+git add drizzle.config.ts src/lib/db.ts src/lib/schema.ts drizzle/ package.json
 git commit -m "feat: 配置 Drizzle ORM 和 SQLite 数据库"
 ```
 
@@ -225,7 +251,7 @@ git commit -m "feat: 添加密码加密和工具函数"
 ```typescript
 // src/app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb, saveDb } from '@/lib/db';
 import { users } from '@/lib/schema';
 import { registerSchema } from '@/lib/validators';
 import { hashPassword, generateId, nowISO } from '@/lib/auth';
@@ -246,6 +272,8 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, password, name } = result.data;
+
+    const db = await getDb();
 
     // 查重复邮箱
     const existingUser = await db
@@ -274,6 +302,7 @@ export async function POST(request: NextRequest) {
     };
 
     await db.insert(users).values(user);
+    saveDb();
 
     // 返回不含密码的用户数据
     const { password: _, ...userWithoutPassword } = user;
