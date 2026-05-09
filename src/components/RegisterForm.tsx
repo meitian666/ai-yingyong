@@ -44,57 +44,56 @@ export default function RegisterForm() {
     }
   }
 
+  const inputClass =
+    'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 bg-gray-50/50 focus:bg-white placeholder:text-gray-400';
+  const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
+  const errorClass = 'text-rose-500 text-xs mt-1';
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md mx-auto">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium mb-1">
+        <label htmlFor="name" className={labelClass}>
           姓名
         </label>
         <input
           id="name"
           {...register('name')}
-          className="w-full border rounded px-3 py-2"
+          className={inputClass}
           placeholder="请输入姓名"
         />
-        {errors.name && (
-          <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-        )}
+        {errors.name && <p className={errorClass}>{errors.name.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1">
+        <label htmlFor="email" className={labelClass}>
           邮箱
         </label>
         <input
           id="email"
           type="email"
           {...register('email')}
-          className="w-full border rounded px-3 py-2"
+          className={inputClass}
           placeholder="请输入邮箱"
         />
-        {errors.email && (
-          <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-        )}
+        {errors.email && <p className={errorClass}>{errors.email.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-1">
+        <label htmlFor="password" className={labelClass}>
           密码
         </label>
         <input
           id="password"
           type="password"
           {...register('password')}
-          className="w-full border rounded px-3 py-2"
-          placeholder="请输入密码（至少 8 位）"
+          className={inputClass}
+          placeholder="至少 8 位密码"
         />
-        {errors.password && (
-          <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
-        )}
+        {errors.password && <p className={errorClass}>{errors.password.message}</p>}
       </div>
 
       {serverError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded px-4 py-3 text-sm">
+        <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-xl px-4 py-3 text-sm">
           {serverError}
         </div>
       )}
@@ -102,10 +101,21 @@ export default function RegisterForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-blue-600 text-white rounded py-2 px-4 hover:bg-blue-700 disabled:opacity-50"
+        className="w-full bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-xl py-3 px-4 text-sm font-medium transition-all duration-200 hover:from-sky-500 hover:to-blue-600 hover:shadow-lg hover:shadow-sky-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100"
       >
-        {isSubmitting ? '注册中...' : '注册'}
+        {isSubmitting ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="animate-spin">⟳</span>
+            注册中...
+          </span>
+        ) : (
+          '创建账号'
+        )}
       </button>
+
+      <p className="text-center text-xs text-gray-400">
+        点击创建账号即表示同意我们的服务条款
+      </p>
     </form>
   );
 }

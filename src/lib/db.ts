@@ -26,6 +26,16 @@ function runMigrations(db: SqlJsDatabase) {
       saveDb();
     }
   }
+
+  // Migration 1: Add email verification columns
+  const columns = db.exec("PRAGMA table_info('users')");
+  const hasEmailVerified = columns[0]?.values.some((row: unknown[]) => row[1] === 'email_verified');
+  if (!hasEmailVerified) {
+    db.run("ALTER TABLE users ADD COLUMN email_verified integer NOT NULL DEFAULT 0");
+    db.run("ALTER TABLE users ADD COLUMN verification_token text");
+    db.run("ALTER TABLE users ADD COLUMN token_expires_at text");
+    saveDb();
+  }
 }
 
 async function initDb() {

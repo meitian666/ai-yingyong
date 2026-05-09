@@ -4,6 +4,7 @@ import { users } from '@/lib/schema';
 import { registerSchema } from '@/lib/validators';
 import { hashPassword, generateId, nowISO } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { sendVerificationEmail, generateVerificationToken, getTokenExpiry } from '@/lib/email';
 import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
@@ -46,6 +47,8 @@ export async function POST(request: NextRequest) {
     }
 
     const hashedPassword = await hashPassword(password);
+    const verificationToken = generateVerificationToken();
+    const tokenExpiresAt = getTokenExpiry();
     const now = nowISO();
     const user = {
       id: generateId(),
@@ -54,13 +57,24 @@ export async function POST(request: NextRequest) {
       name,
       createdAt: now,
       updatedAt: now,
+      emailVerified: 0,
+      verificationToken,
+      tokenExpiresAt,
     };
 
     await db.insert(users).values(user);
     saveDb();
 
+    // 非阻塞发送验证邮件
+    sendVerificationEmail({ to: email, name, token: verificationToken }).catch(
+      (err) => console.error('Failed to send verification email:', err)
+    );
+
     const { password: _, ...userWithoutPassword } = user;
-    return NextResponse.json(userWithoutPassword, { status: 201 });
+    return NextResponse.json(
+      { ...userWithoutPassword, emailVerified: false },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
